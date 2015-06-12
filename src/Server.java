@@ -2,10 +2,12 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.text.*;
 
 public class Server {
     public static final int MAX_CONNECTIONS = 20;
     protected static final String SERVER_NAME = "SERVER";
+	protected static final SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yy hh:mm:ss-z");
     protected int port;
     protected LinkedList<Runnable> workers;
     protected ThreadPoolExecutor tpe;
@@ -69,6 +71,10 @@ public class Server {
     }
     
     public static String formatMsg(String name, String msg) {
-        return "[" + name + "]@"+ (new Date()) + ":" + (msg.charAt(msg.length()-1)=='\n'? msg : (msg + '\n') );
+		StringBuilder sb = new StringBuilder();
+		sb.append("[" + sdf.format(new Date()) + "]");
+		sb.append(name);
+		sb.append(":" + msg );
+		return sb.toString();
     }
 }

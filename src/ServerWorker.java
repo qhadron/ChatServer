@@ -31,7 +31,7 @@ public class ServerWorker implements Runnable {
                 String line;
                 try {
 					if ((line=in.readLine())!=null && line.length()>0) {
-						System.out.println("Received message" + line);
+						System.out.println("Received message:" + line);
 						if (line.charAt(0)==C_NAME) {
 							this.name = line.substring(1);
 							server.broadcastMsg(name + " connected");
@@ -50,6 +50,7 @@ public class ServerWorker implements Runnable {
                 } catch (SocketException e) {
                     e.printStackTrace();
 					try {socket.close();}catch(Exception e1){};
+					server.broadcastMsg(name + " disconnected");
 					System.out.println("Ending this worker...");
 					break;
                 } catch (Exception e) {

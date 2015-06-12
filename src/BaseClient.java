@@ -2,12 +2,13 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-
+import java.awt.event.*;
 public class BaseClient {
     protected Socket socket;
     protected BufferedReader in;
     protected PrintWriter out;
     protected ConcurrentLinkedQueue<String> msgQueue;
+	protected LinkedList<ActionListener> listening;
     protected boolean running;
     protected Thread listenWorker;
     public BaseClient(InetAddress address, int port) throws IOException{
@@ -15,8 +16,10 @@ public class BaseClient {
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()),true);
         msgQueue = new ConcurrentLinkedQueue<>();
+		listening = new LinkedList<>();
         running = true;
         listenWorker = new Thread(new ServerListener());
+		listenWorker.start();
     }
     
     public boolean hasMsg() {
@@ -31,6 +34,10 @@ public class BaseClient {
         return msgQueue.poll();
     }
     
+	public void addActionListener(ActionListener listener) {
+		listening.add(listener);
+	}
+	
     public void stop() {
         running = false;
         out.println(ServerWorker.C_END);
@@ -52,11 +59,14 @@ public class BaseClient {
             String line;
             while(running) {
                 try {
-                    if  ((line = in.readLine())!=null) {
-                        msgQueue.add(line);
+                    if  ((line = in.readLine())!=null&&line.length()>0) {
+						msgQueue.add(line);
+						for (ActionListener cur : listening)
+							cur.actionPerformed(new ActionEvent(BaseClient.this,ActionEvent.ACTION_PERFORMED,"MSG Received"));
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
+					running = false;
                 }
             }
         }
