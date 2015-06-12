@@ -24,29 +24,40 @@ public class ServerWorker implements Runnable {
         try {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
-            while (!socket.isClosed()) {
-                String line;
-                if ((line=in.readLine())!=null && line.length()>0) {
-                    if (line.charAt(0)==C_NAME) {
-                        this.name = line.substring(1);
-                        server.broadcastMsg(name + " connected");
-                    } else if (line.charAt(0)==C_END){
-                        socket.close();
-                        break;
-                    }
-                    else {
-                        server.pushMsgs(Server.formatMsg(name,line));
-                    }
-                }
-                try {
-                    Thread.sleep(10);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (Exception e) {
+		} catch (Exception e) {
             e.printStackTrace();
         }
+            while (!socket.isClosed()) {
+                String line;
+                try {
+					if ((line=in.readLine())!=null && line.length()>0) {
+						System.out.println("Received message" + line);
+						if (line.charAt(0)==C_NAME) {
+							this.name = line.substring(1);
+							server.broadcastMsg(name + " connected");
+							System.out.println(name + " connected");
+						} else if (line.charAt(0)==C_END){
+							System.out.println("User logged out");
+							server.broadcastMsg(name + " left the room.");
+							socket.close();
+							break;
+						}
+						else {
+							server.pushMsgs(Server.formatMsg(name,line));
+						}
+					}
+                    Thread.sleep(10);
+                } catch (SocketException e) {
+                    e.printStackTrace();
+					try {socket.close();}catch(Exception e1){};
+					System.out.println("Ending this worker...");
+					break;
+                } catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+            }
+        
     
     }
     
@@ -57,5 +68,8 @@ public class ServerWorker implements Runnable {
     public void sendMsg(String msg) {
         out.println(msg);
     }
-    
+	
+	public String getName() {
+		return this.name;
+	}
 }

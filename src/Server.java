@@ -7,7 +7,7 @@ public class Server {
     public static final int MAX_CONNECTIONS = 20;
     protected static final String SERVER_NAME = "SERVER";
     protected int port;
-    protected BlockingQueue<Runnable> workers;
+    protected LinkedList<Runnable> workers;
     protected ThreadPoolExecutor tpe;
     
     public static void main(String[] args) {
@@ -16,8 +16,8 @@ public class Server {
     
     public Server(int port) {
         this.port = port;
-        workers = new LinkedBlockingQueue<>();
-        tpe = new ThreadPoolExecutor(MAX_CONNECTIONS/2, MAX_CONNECTIONS, 5L, TimeUnit.SECONDS, workers);
+        workers = new LinkedList<>();
+        tpe = new ThreadPoolExecutor(MAX_CONNECTIONS/2, MAX_CONNECTIONS, 5L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
     }
     public void start() {
         ServerSocket s;
@@ -29,7 +29,9 @@ public class Server {
             while(true) {
                 Socket client = s.accept();
                 System.out.println("Accepted socket");
-                tpe.execute(new ServerWorker(this, client));
+				ServerWorker cur = new ServerWorker(this, client);
+				workers.add(cur);
+                tpe.execute(cur);
             }
           
         } catch (Exception e) {
@@ -51,12 +53,15 @@ public class Server {
      * @param msg The message to send
      */
     public synchronized void pushMsgs(String msg) {
+		System.out.println("Sent messages to " + workers.size() + " clients");
         for (Iterator<Runnable> it = workers.iterator(); it.hasNext();) {
             ServerWorker worker = (ServerWorker)it.next();
             if (worker.isAlive()) {
+				System.out.println("Sent message to " + worker.getName());
                 worker.sendMsg(msg);
             }
             else {
+				System.out.println(worker.getName()+" died.");
                 it.remove();
             }
         }
